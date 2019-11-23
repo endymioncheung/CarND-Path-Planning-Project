@@ -57,7 +57,7 @@ int main() {
   const int lane = 1;
 
   // Reference velocity to target
-  const double ref_vel = 49.5; // [mph]
+  double ref_vel = 49.5; // [mph]
   
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy, &ref_vel]
@@ -100,6 +100,45 @@ int main() {
           vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
           int prev_size = previous_path_x.size();
 
+          if (prev_size > 0)
+          {
+            car_s = end_path_s;
+          }
+          bool too_close = false;
+          
+          // Find reference velocity to use
+          for (int i = 0; i < sensor_fusion.size(); i++)
+          {
+            // Obtain the d value of the other car
+            float d = sensor_fusion[i][6];
+            
+            // Check if the other car is within the main car lane
+            if((2+4*lane-2) < d && d < (2+4*lane+2))
+            {
+              double vx = sensor_fusion[i][3];
+              double vy = sensor_fusion[i][4];
+              double check_speed = sqrt(vx*vx+vy*vy);
+              double check_car_s = sensor_fusion[i][5];
+              
+              // Project the other car s value
+              check_car_s += (double)prev_size * 0.02 * check_speed;
+              
+              // Check if the other car is in front of us and the gap
+              // is less than 30 meters
+              bool car_in_front = check_car_s > car_s? true : false;
+              double safe_gap_s = 30.0; // [m]
+              double gap_s = check_car_s - car_s; // [m]
+              if (car_in_front && gap_s < safe_gap_s)
+              {
+                // Do some logic here, lower reference velocity,
+                // so we don't crash into the car in front of us,
+                // also flag to try to change lanes
+                ref_vel = 29.5; // [mph]
+                too_close = true;
+              }
+            }
+          }
+          
           // Create a list of widely spaced (x,y) waypoints, even spaced at 30m
           // later we will interpolate these waypoints with a spline and fill it in with more points that control spline
           
