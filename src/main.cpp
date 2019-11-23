@@ -59,8 +59,11 @@ int main() {
   // Reference velocity to target
   double ref_vel = 49.5; // [mph]
   
+  // Convert MPH to m/s
+  const double mph2mps = 0.44704;
+  
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy, &ref_vel]
+               &map_waypoints_dx,&map_waypoints_dy, &ref_vel, &mph2mps]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -233,11 +236,9 @@ int main() {
           {
             // Time interval between waypoints in seconds
             const double t_wp_update = 0.02;
+            const double five_mph_in_mps = 5 * mph2mps; // 2.24 [m/s]
             
-            // Convert MPH to m/s
-            const double mph2mps = 2.24;
-            
-            double N = target_dist / (t_wp_update * ref_vel/mph2mps);
+            double N = target_dist / (t_wp_update * ref_vel/five_mph_in_mps);
             double x_point = x_add_on + target_x/N;
             double y_point = s(x_point);
             
