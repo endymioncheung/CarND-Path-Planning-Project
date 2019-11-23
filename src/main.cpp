@@ -50,9 +50,17 @@ int main() {
     map_waypoints_dx.push_back(d_x);
     map_waypoints_dy.push_back(d_y);
   }
+  
+  // Lane 0 is the far left lane
+  // Lane 1 is the middle lane
+  // Lane 2 is the right lane
+  const int lane = 1;
 
+  // Reference velocity to target
+  const double ref_vel = 49.5; // [mph]
+  
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy]
+               &map_waypoints_dx,&map_waypoints_dy, &ref_vel]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -134,11 +142,6 @@ int main() {
           }
           
           // In Frenet add evenly 30m spaaced points ahead of the starting reference
-          // Lane 0 is the far left lane
-          // Lane 1 is the middle lane
-          // Lane 2 is the right lane
-          // Start in lane 1
-          const int lane = 1;
           vector<double> next_wp0 = getXY(car_s+30,(2+4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y);
           vector<double> next_wp1 = getXY(car_s+60,(2+4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y);
           vector<double> next_wp2 = getXY(car_s+90,(2+4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y);
@@ -191,9 +194,6 @@ int main() {
           {
             // Time interval between waypoints in seconds
             const double t_wp_update = 0.02;
-            
-            // Reference velocity to target
-            const double ref_vel = 49.5; // [mph]
             
             // Convert MPH to m/s
             const double mph2mps = 2.24;
