@@ -134,7 +134,7 @@ int main() {
                 // so we don't crash into the car in front of us,
                 // also flag to try to change lanes
                 ref_vel = 29.5; // [mph]
-                too_close = true;
+                // too_close = true;
               }
             }
           }
