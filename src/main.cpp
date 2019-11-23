@@ -97,8 +97,8 @@ int main() {
            * TODO: define a path made up of (x,y) points that the car will visit
            *   sequentially every .02 seconds
            */
-          // distance of space apart [m] ~50mph
-          double dist_inc = 0.5;
+          // distance of space apart [m] ~30mph
+          double dist_inc = 0.3;
           for (int i = 0; i < 50; ++i) {
             // driving the car within the lane using the Frenet coordinates
             double next_s = car_s + (i+1)*dist_inc;
