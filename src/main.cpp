@@ -57,13 +57,20 @@ int main() {
   // Lane 0 is the far left lane
   // Lane 1 is the middle lane
   // Lane 2 is the right lane
-  const int lane = 1; // [index]
+  enum Lane
+  {
+    left_lane   = 0,
+    middle_lane = 1,
+    right_lane  = 2
+  };
+  
+  Lane lane = middle_lane; // [index]
 
   // Initial reference velocity to target car
   double ref_vel = 0.0; // [mph]
   
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy, &ref_vel, &mph2mps]
+               &map_waypoints_dx,&map_waypoints_dy, &ref_vel, &mph2mps,  &lane]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -138,6 +145,11 @@ int main() {
                 // also flag to try to change lanes
                 // ref_vel = 29.5; // [mph]
                 too_close = true;
+                
+                if (lane != left_lane)
+                {
+                  lane = left_lane;
+                }
               }
             }
           }
@@ -183,7 +195,7 @@ int main() {
             ptsy.push_back(ref_y);
           }
           
-          // In Frenet add evenly 30m spaaced points ahead of the starting reference
+          // In Frenet add evenly 30m spaced points ahead of the starting reference
           vector<double> next_wp0 = getXY(car_s+30,(2+4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y);
           vector<double> next_wp1 = getXY(car_s+60,(2+4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y);
           vector<double> next_wp2 = getXY(car_s+90,(2+4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y);
@@ -293,6 +305,7 @@ int main() {
 //            next_y_vals.push_back(xy[1]);
 //
 //            // driving the car with angle in a straight line with constant velocity
+              // distance increment [m] * time elapsed [sec] * XorY component of yaw [deg/sec]
 //            // next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
 //            // next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
 //          }
