@@ -51,7 +51,7 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  // Convert MPH to m/s
+  // Convert mph to m/s
   const double mph2mps = 0.44704; // [m/s]
   
   // Lane 0 is the far left lane
@@ -140,23 +140,6 @@ int main() {
                 too_close = true;
               }
             }
-          }
-          
-          const double max_vel = 49.5; // [mph]
-          // If too close to the target car
-          // lower the reference velocity
-          if (too_close)
-          {
-            // Lower the reference velocity by 0.5 MPH
-            ref_vel -= 0.5 * mph2mps; // [m/s]
-          }
-          // If not too close to the target car
-          // and reference velocity below target velocity
-          // increment the velocity by 0.5 MPH
-          else if (ref_vel < max_vel)
-          {
-            // Increase the reference velocity by 0.5 MPH
-            ref_vel += 0.5 * mph2mps; // [m/s]
           }
           
           // Create a list of widely spaced (x,y) waypoints, even spaced at 30m
@@ -248,9 +231,27 @@ int main() {
           
           double x_add_on = 0;
           
+          // Maximum ego car velocity [mph]
+          const double max_vel = 49.5; // [mph]
+          
           // Fill up the rest of the path planner after filling the previous points, here we always output 50 points
           for (int i = 1; i <= 50-previous_path_x.size(); i++)
           {
+            // If too close to the target car
+            // then lower the reference velocity
+            if (too_close)
+            {
+              // Lower the reference velocity by 0.5 mph
+              ref_vel -= 0.5 * mph2mps; // [m/s]
+            }
+            // If not too close to the target car and reference velocity is below target velocity
+            // then increment the velocity by 0.5 mph
+            else if (ref_vel < max_vel)
+            {
+              // Increase the reference velocity by 0.5 mph
+              ref_vel += 0.5 * mph2mps; // [m/s]
+            }
+            
             // Time interval between waypoints in seconds
             const double t_wp_update = 0.02;
             const double five_mph_in_mps = 5 * mph2mps; // 2.24 [m/s]
