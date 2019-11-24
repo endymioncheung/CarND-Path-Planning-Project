@@ -50,17 +50,17 @@ int main() {
     map_waypoints_dx.push_back(d_x);
     map_waypoints_dy.push_back(d_y);
   }
+
+  // Convert MPH to m/s
+  const double mph2mps = 0.44704; // [m/s]
   
   // Lane 0 is the far left lane
   // Lane 1 is the middle lane
   // Lane 2 is the right lane
-  const int lane = 1;
+  const int lane = 1; // [index]
 
-  // Reference velocity to target
-  double ref_vel = 49.5; // [mph]
-  
-  // Convert MPH to m/s
-  const double mph2mps = 0.44704;
+  // Initial reference velocity to target car
+  double ref_vel = 0.0; // [mph]
   
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy, &ref_vel, &mph2mps]
@@ -136,10 +136,27 @@ int main() {
                 // Do some logic here, lower reference velocity,
                 // so we don't crash into the car in front of us,
                 // also flag to try to change lanes
-                ref_vel = 29.5; // [mph]
-                // too_close = true;
+                // ref_vel = 29.5; // [mph]
+                too_close = true;
               }
             }
+          }
+          
+          const double max_vel = 49.5; // [mph]
+          // If too close to the target car
+          // lower the reference velocity
+          if (too_close)
+          {
+            // Lower the reference velocity by 0.5 MPH
+            ref_vel -= 0.5 * mph2mps; // [m/s]
+          }
+          // If not too close to the target car
+          // and reference velocity below target velocity
+          // increment the velocity by 0.5 MPH
+          else if (ref_vel < max_vel)
+          {
+            // Increase the reference velocity by 0.5 MPH
+            ref_vel += 0.5 * mph2mps; // [m/s]
           }
           
           // Create a list of widely spaced (x,y) waypoints, even spaced at 30m
