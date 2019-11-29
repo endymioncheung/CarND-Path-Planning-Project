@@ -236,7 +236,7 @@ int main() {
             next_y_vals.push_back(previous_path_y[i]);
           }
           
-          // Calculate how to break up spline points, so that we trave at our desired reference velocity
+          // Calculate how to break up spline points, so that we travel at our desired reference velocity
           double target_x = 30.0;
           double target_y = s(target_x);
           double target_dist = sqrt((target_x*target_x)+(target_y*target_y));
@@ -293,8 +293,10 @@ int main() {
            * TODO: define a path made up of (x,y) points that the car will visit
            *   sequentially every .02 seconds
            */
-//          // distance of space apart [m] ~30mph
-//          double dist_inc = 0.3;
+//          // Distance of space apart [m] ~30mph
+            // Points are 0.5m apart
+//          double dist_inc = 0.5;
+            // The car moves 50 times a second, a distance of 0.5m per move will create a velocity of 25 m/s.
 //          for (int i = 0; i < 50; ++i) {
 //            // driving the car within the lane using the Frenet coordinates
 //            double next_s = car_s + (i+1)*dist_inc;

@@ -4,10 +4,14 @@
 #include <math.h>
 #include <string>
 #include <vector>
+#include "Eigen-3.3/Eigen/Dense"
+#include <cmath>
 
 // for convenience
 using std::string;
 using std::vector;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -154,4 +158,72 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
   return {x,y};
 }
 
+vector<double> JMT(vector<double> &start, vector<double> &end, double T) {
+  /**
+   * Calculate the Jerk Minimizing Trajectory that connects the initial state
+   * to the final state in time T.
+   *
+   * @param start - the vehicles start location given as a length three array
+   *   corresponding to initial values of [s, s_dot, s_double_dot]
+   * @param end - the desired end state for vehicle. Like "start" this is a
+   *   length three array.
+   * @param T - The duration, in seconds, over which this maneuver should occur.
+   *
+   * @output an array of length 6, each value corresponding to a coefficent in
+   *   the polynomial:
+   *   s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
+   *
+   * EXAMPLE
+   *   > JMT([0, 10, 0], [10, 10, 0], 1)
+   *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+   */
+  MatrixXd A = MatrixXd(3, 3);
+  A << T*T*T, T*T*T*T, T*T*T*T*T,
+       3*T*T, 4*T*T*T,5*T*T*T*T,
+       6*T, 12*T*T, 20*T*T*T;
+    
+  MatrixXd B = MatrixXd(3,1);
+  B << end[0]-(start[0]+start[1]*T+.5*start[2]*T*T),
+       end[1]-(start[1]+start[2]*T),
+       end[2]-start[2];
+          
+  MatrixXd Ai = A.inverse();
+  
+  MatrixXd C = Ai*B;
+  
+  vector <double> result = {start[0], start[1], .5*start[2]};
+
+  for(int i = 0; i < C.size(); ++i) {
+    result.push_back(C.data()[i]);
+  }
+
+  return result;
+}
+
+double goal_distance_cost(int goal_lane, int intended_lane, int final_lane,
+                          double distance_to_goal) {
+  // The cost increases with both the distance of intended lane from the goal
+  //   and the distance of the final lane from the goal. The cost of being out
+  //   of the goal lane also becomes larger as the vehicle approaches the goal.
+    
+  /**
+   * TODO: Replace cost = 0 with an appropriate cost function.
+   */
+  
+    int delta_d = (goal_lane - intended_lane)+ (goal_lane - final_lane);
+    double cost = 1 - exp(-(std::abs(delta_d) / distance_to_goal));
+    
+  return cost;
+}
+
+double inefficiency_cost(int target_speed, int intended_lane, int final_lane,
+                         const std::vector<int> &lane_speeds) {
+  // Cost becomes higher for trajectories with intended lane and final lane
+  //   that have traffic slower than target_speed.
+  double speed_intended = lane_speeds[intended_lane];
+  double speed_final = lane_speeds[final_lane];
+  double cost = (2.0*target_speed - speed_intended - speed_final)/target_speed;
+
+  return cost;
+}
 #endif  // HELPERS_H
