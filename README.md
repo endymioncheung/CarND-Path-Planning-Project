@@ -50,7 +50,9 @@ the path has processed since last time.
 - ["end_path_s"] The previous list's last point's frenet s value
 - ["end_path_d"] The previous list's last point's frenet d value
 
-#### Sensor Fusion Data, a list of all other car's attributes on the same side of the road. (No Noise)
+#### Sensor Fusion Data
+
+Sensor fusion data is a list of all other (non-ego) car's attributes on the same side of the road. (No Noise)
 
 ["sensor_fusion"] A 2d vector of cars and then that car's
 - car's unique ID
