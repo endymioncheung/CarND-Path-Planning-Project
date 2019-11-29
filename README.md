@@ -28,32 +28,25 @@ Here is the data provided from the Simulator to the C++ Program
 
 #### Main car's localization Data (No Noise)
 
-["x"] The car's x position in map coordinates
-
-["y"] The car's y position in map coordinates
-
-["s"] The car's s position in frenet coordinates
-
-["d"] The car's d position in frenet coordinates
-
-["yaw"] The car's yaw angle in the map
-
-["speed"] The car's speed in MPH
+- ["x"] The car's x position in map coordinates
+- ["y"] The car's y position in map coordinates
+- ["s"] The car's s position in frenet coordinates
+- ["d"] The car's d position in frenet coordinates
+- ["yaw"] The car's yaw angle in the map
+- ["speed"] The car's speed in MPH
 
 #### Previous path data given to the Planner
 
 //Note: Return the previous list but with processed points removed, can be a nice tool to show how far along
 the path has processed since last time. 
 
-["previous_path_x"] The previous list of x points previously given to the simulator
-
-["previous_path_y"] The previous list of y points previously given to the simulator
+- ["previous_path_x"] The previous list of x points previously given to the simulator
+- ["previous_path_y"] The previous list of y points previously given to the simulator
 
 #### Previous path's end s and d values 
 
-["end_path_s"] The previous list's last point's frenet s value
-
-["end_path_d"] The previous list's last point's frenet d value
+- ["end_path_s"] The previous list's last point's frenet s value
+- ["end_path_d"] The previous list's last point's frenet d value
 
 #### Sensor Fusion Data, a list of all other car's attributes on the same side of the road. (No Noise)
 
@@ -109,37 +102,3 @@ Please (do your best to) stick to [Google's C++ style guide](https://google.gith
 
 Note: regardless of the changes you make, your project must be buildable using
 cmake and make!
-
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
