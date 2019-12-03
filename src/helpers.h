@@ -6,12 +6,17 @@
 #include <vector>
 #include "Eigen-3.3/Eigen/Dense"
 #include <cmath>
+#include "classifier.h"
 
 // for convenience
 using std::string;
 using std::vector;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+
+using std::cout;
+using std::endl;
+using std::ifstream;
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -225,5 +230,45 @@ double inefficiency_cost(int target_speed, int intended_lane, int final_lane,
   double cost = (2.0*target_speed - speed_intended - speed_final)/target_speed;
 
   return cost;
+}
+
+// Load state from .txt file
+vector<vector<double>> Load_State(string file_name) {
+  ifstream in_state_(file_name.c_str(), ifstream::in);
+  vector<vector<double>> state_out;
+  string line;
+  
+  // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
+  while (getline(in_state_, line)) {
+    std::istringstream iss(line);
+    vector<double> x_coord;
+      
+    string token;
+    while (getline(iss,token,',')) {
+      x_coord.push_back(stod(token));
+    }
+    state_out.push_back(x_coord);
+  }
+
+  return state_out;
+}
+
+// Load labels from .txt file
+vector<string> Load_Label(string file_name) {
+  // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
+  ifstream in_label_(file_name.c_str(), ifstream::in);
+  vector<string> label_out;
+  string line;
+  
+  while (getline(in_label_, line)) {
+    std::istringstream iss(line);
+    
+    string label;
+    iss >> label;
+    
+    label_out.push_back(label);
+  }
+    
+  return label_out;
 }
 #endif  // HELPERS_H
