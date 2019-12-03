@@ -1,12 +1,11 @@
-#ifndef HELPERS_H
-#define HELPERS_H
+#ifndef helpers_h
+#define helpers_h
 
 #include <math.h>
 #include <string>
 #include <vector>
 #include "Eigen-3.3/Eigen/Dense"
 #include <cmath>
-#include "classifier.h"
 
 // for convenience
 using std::string;
@@ -14,13 +13,15 @@ using std::vector;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-using std::cout;
-using std::endl;
-using std::ifstream;
+// For converting back and forth between radians and degrees.
+constexpr double pi() { return M_PI; }
+double deg2rad(double x) { return x * pi() / 180; }
+double rad2deg(double x) { return x * 180 / pi(); }
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
-//   else the empty string "" will be returned.
+// else the empty string "" will be returned.
+
 string hasData(string s) {
   auto found_null = s.find("null");
   auto b1 = s.find_first_of("[");
@@ -33,242 +34,100 @@ string hasData(string s) {
   return "";
 }
 
-//
-// Helper functions related to waypoints and converting from XY to Frenet
-//   or vice versa
-//
-
-// For converting back and forth between radians and degrees.
-constexpr double pi() { return M_PI; }
-double deg2rad(double x) { return x * pi() / 180; }
-double rad2deg(double x) { return x * 180 / pi(); }
-
-// Calculate distance between two points
-double distance(double x1, double y1, double x2, double y2) {
+double distance(double x1, double y1, double x2, double y2)
+{
   return sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
 }
 
-// Calculate closest waypoint to current x, y position
-int ClosestWaypoint(double x, double y, const vector<double> &maps_x, 
-                    const vector<double> &maps_y) {
+int ClosestWaypoint(double x, double y, vector<double> maps_x, vector<double> maps_y)
+{
   double closestLen = 100000; //large number
   int closestWaypoint = 0;
 
-  for (int i = 0; i < maps_x.size(); ++i) {
+  for(int i = 0; i < maps_x.size(); i++)
+  {
     double map_x = maps_x[i];
     double map_y = maps_y[i];
     double dist = distance(x,y,map_x,map_y);
-    if (dist < closestLen) {
+    if(dist < closestLen)
+    {
       closestLen = dist;
       closestWaypoint = i;
     }
   }
-
   return closestWaypoint;
 }
 
-// Returns next waypoint of the closest waypoint
-int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x, 
-                 const vector<double> &maps_y) {
+int NextWaypoint(double x, double y, double theta, vector<double> maps_x, vector<double> maps_y)
+{
   int closestWaypoint = ClosestWaypoint(x,y,maps_x,maps_y);
-
   double map_x = maps_x[closestWaypoint];
   double map_y = maps_y[closestWaypoint];
-
-  double heading = atan2((map_y-y),(map_x-x));
-
-  double angle = fabs(theta-heading);
-  angle = std::min(2*pi() - angle, angle);
-
-  if (angle > pi()/2) {
-    ++closestWaypoint;
-    if (closestWaypoint == maps_x.size()) {
-      closestWaypoint = 0;
-    }
+  double heading = atan2( (map_y-y),(map_x-x) );
+  double angle = abs(theta-heading);
+  if(angle > pi()/4)
+  {
+    closestWaypoint++;
   }
-
   return closestWaypoint;
 }
 
 // Transform from Cartesian x,y coordinates to Frenet s,d coordinates
-vector<double> getFrenet(double x, double y, double theta, 
-                         const vector<double> &maps_x, 
-                         const vector<double> &maps_y) {
+vector<double> getFrenet(double x, double y, double theta, vector<double> maps_x, vector<double> maps_y, vector<double> maps_s)
+{
   int next_wp = NextWaypoint(x,y, theta, maps_x,maps_y);
-
   int prev_wp;
   prev_wp = next_wp-1;
-  if (next_wp == 0) {
+  if(next_wp == 0)
+  {
     prev_wp  = maps_x.size()-1;
   }
-
   double n_x = maps_x[next_wp]-maps_x[prev_wp];
   double n_y = maps_y[next_wp]-maps_y[prev_wp];
   double x_x = x - maps_x[prev_wp];
   double x_y = y - maps_y[prev_wp];
-
   // find the projection of x onto n
   double proj_norm = (x_x*n_x+x_y*n_y)/(n_x*n_x+n_y*n_y);
   double proj_x = proj_norm*n_x;
   double proj_y = proj_norm*n_y;
-
   double frenet_d = distance(x_x,x_y,proj_x,proj_y);
-
   //see if d value is positive or negative by comparing it to a center point
   double center_x = 1000-maps_x[prev_wp];
   double center_y = 2000-maps_y[prev_wp];
   double centerToPos = distance(center_x,center_y,x_x,x_y);
   double centerToRef = distance(center_x,center_y,proj_x,proj_y);
-
-  if (centerToPos <= centerToRef) {
+  if(centerToPos <= centerToRef)
+  {
     frenet_d *= -1;
   }
-
   // calculate s value
-  double frenet_s = 0;
-  for (int i = 0; i < prev_wp; ++i) {
+  double frenet_s = maps_s[0];
+  for(int i = 0; i < prev_wp; i++)
+  {
     frenet_s += distance(maps_x[i],maps_y[i],maps_x[i+1],maps_y[i+1]);
   }
-
   frenet_s += distance(0,0,proj_x,proj_y);
-
   return {frenet_s,frenet_d};
 }
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
-vector<double> getXY(double s, double d, const vector<double> &maps_s, 
-                     const vector<double> &maps_x, 
-                     const vector<double> &maps_y) {
+vector<double> getXY(double s, double d, vector<double> maps_s, vector<double> maps_x, vector<double> maps_y)
+{
   int prev_wp = -1;
-
-  while (s > maps_s[prev_wp+1] && (prev_wp < (int)(maps_s.size()-1))) {
-    ++prev_wp;
+  while(s > maps_s[prev_wp+1] && (prev_wp < (int)(maps_s.size()-1) ))
+  {
+    prev_wp++;
   }
-
   int wp2 = (prev_wp+1)%maps_x.size();
-
-  double heading = atan2((maps_y[wp2]-maps_y[prev_wp]),
-                         (maps_x[wp2]-maps_x[prev_wp]));
+  double heading = atan2((maps_y[wp2]-maps_y[prev_wp]),(maps_x[wp2]-maps_x[prev_wp]));
   // the x,y,s along the segment
   double seg_s = (s-maps_s[prev_wp]);
-
   double seg_x = maps_x[prev_wp]+seg_s*cos(heading);
   double seg_y = maps_y[prev_wp]+seg_s*sin(heading);
-
   double perp_heading = heading-pi()/2;
-
   double x = seg_x + d*cos(perp_heading);
   double y = seg_y + d*sin(perp_heading);
-
   return {x,y};
 }
 
-vector<double> JMT(vector<double> &start, vector<double> &end, double T) {
-  /**
-   * Calculate the Jerk Minimizing Trajectory that connects the initial state
-   * to the final state in time T.
-   *
-   * @param start - the vehicles start location given as a length three array
-   *   corresponding to initial values of [s, s_dot, s_double_dot]
-   * @param end - the desired end state for vehicle. Like "start" this is a
-   *   length three array.
-   * @param T - The duration, in seconds, over which this maneuver should occur.
-   *
-   * @output an array of length 6, each value corresponding to a coefficent in
-   *   the polynomial:
-   *   s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
-   *
-   * EXAMPLE
-   *   > JMT([0, 10, 0], [10, 10, 0], 1)
-   *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
-   */
-  MatrixXd A = MatrixXd(3, 3);
-  A << T*T*T, T*T*T*T, T*T*T*T*T,
-       3*T*T, 4*T*T*T,5*T*T*T*T,
-       6*T, 12*T*T, 20*T*T*T;
-    
-  MatrixXd B = MatrixXd(3,1);
-  B << end[0]-(start[0]+start[1]*T+.5*start[2]*T*T),
-       end[1]-(start[1]+start[2]*T),
-       end[2]-start[2];
-          
-  MatrixXd Ai = A.inverse();
-  
-  MatrixXd C = Ai*B;
-  
-  vector <double> result = {start[0], start[1], .5*start[2]};
-
-  for(int i = 0; i < C.size(); ++i) {
-    result.push_back(C.data()[i]);
-  }
-
-  return result;
-}
-
-double goal_distance_cost(int goal_lane, int intended_lane, int final_lane,
-                          double distance_to_goal) {
-  // The cost increases with both the distance of intended lane from the goal
-  //   and the distance of the final lane from the goal. The cost of being out
-  //   of the goal lane also becomes larger as the vehicle approaches the goal.
-    
-  /**
-   * TODO: Replace cost = 0 with an appropriate cost function.
-   */
-  
-    int delta_d = (goal_lane - intended_lane)+ (goal_lane - final_lane);
-    double cost = 1 - exp(-(std::abs(delta_d) / distance_to_goal));
-    
-  return cost;
-}
-
-double inefficiency_cost(int target_speed, int intended_lane, int final_lane,
-                         const std::vector<int> &lane_speeds) {
-  // Cost becomes higher for trajectories with intended lane and final lane
-  //   that have traffic slower than target_speed.
-  double speed_intended = lane_speeds[intended_lane];
-  double speed_final = lane_speeds[final_lane];
-  double cost = (2.0*target_speed - speed_intended - speed_final)/target_speed;
-
-  return cost;
-}
-
-// Load state from .txt file
-vector<vector<double>> Load_State(string file_name) {
-  ifstream in_state_(file_name.c_str(), ifstream::in);
-  vector<vector<double>> state_out;
-  string line;
-  
-  // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
-  while (getline(in_state_, line)) {
-    std::istringstream iss(line);
-    vector<double> x_coord;
-      
-    string token;
-    while (getline(iss,token,',')) {
-      x_coord.push_back(stod(token));
-    }
-    state_out.push_back(x_coord);
-  }
-
-  return state_out;
-}
-
-// Load labels from .txt file
-vector<string> Load_Label(string file_name) {
-  // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
-  ifstream in_label_(file_name.c_str(), ifstream::in);
-  vector<string> label_out;
-  string line;
-  
-  while (getline(in_label_, line)) {
-    std::istringstream iss(line);
-    
-    string label;
-    iss >> label;
-    
-    label_out.push_back(label);
-  }
-    
-  return label_out;
-}
-#endif  // HELPERS_H
+#endif /* helpers_h */
