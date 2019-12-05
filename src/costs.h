@@ -33,13 +33,13 @@ double logistic(double x){
 }
 
 double nearest_approach(vector<double> &s_traj, vector<double> &d_traj,
-                        vector<vector<double>> &prediction) {
+                        vector<Vehicle> &prediction) {
   
   // Find the closest distance between the trajectory and the prediction
   
   double closest_distance = 999999;
   for (int i = 0; i < N_SAMPLES; i++) {
-    double current_distance = sqrt(pow(s_traj[i] - prediction[i][0], 2) + pow(d_traj[i] - prediction[i][1], 2));
+    double current_distance = sqrt(pow(s_traj[i] - prediction[i].s, 2) + pow(d_traj[i] - prediction[i].d, 2));
     if (current_distance < closest_distance) {
       closest_distance = current_distance;
     }
@@ -48,7 +48,7 @@ double nearest_approach(vector<double> &s_traj, vector<double> &d_traj,
 }
 
 double nearest_approach_to_any_cars(vector<double> &s_traj, vector<double> &d_traj,
-                                    map<int,vector<vector<double>>> &predictions) {
+                                    map<int,vector<Vehicle>> &predictions) {
   
   // Find the closest distance between the trajectory and the list of predictions
 
@@ -63,7 +63,7 @@ double nearest_approach_to_any_cars(vector<double> &s_traj, vector<double> &d_tr
 }
 
 double nearest_approach_to_any_cars_in_lane(vector<double> &s_traj, vector<double> &d_traj,
-                                            map<int,vector<vector<double>>> &predictions) {
+                                            map<int,vector<Vehicle>> &predictions) {
   
   // Find the closest distance between the trajactory and
   // predictions of other vehicles within the same lane
@@ -76,8 +76,8 @@ double nearest_approach_to_any_cars_in_lane(vector<double> &s_traj, vector<doubl
   for (auto prediction : predictions) {
     
     // Non-ego vehicle predicted lane
-    vector<vector<double>> pred_traj = prediction.second;
-    double pred_d = pred_traj[pred_traj.size() - 1][1];
+    vector<Vehicle> pred_traj = prediction.second;
+    double pred_d = pred_traj[pred_traj.size() - 1].d;
     int    pred_lane = pred_d / LANE_WIDTH;
     
     // Find the closest distance between the trajactory and
@@ -95,7 +95,7 @@ double nearest_approach_to_any_cars_in_lane(vector<double> &s_traj, vector<doubl
 // COST FUNCTIONS
 
 double collision_cost(vector<double> &s_traj, vector<double> &d_traj,
-                      map<int,vector<vector<double>>> &predictions) {
+                      map<int,vector<Vehicle>> &predictions) {
   
   // Binary cost function that penalizes collisions
   
@@ -151,7 +151,7 @@ double traj_diff_cost(vector<double> &s_traj, vector<double> &target_s) {
   return logistic(cost);
 }
 
-double buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vector<vector<double>>> &predictions) {
+double buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vector<Vehicle>> &predictions) {
   
   // Penalize getting close to other vehicles
   
@@ -159,7 +159,7 @@ double buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vecto
   return logistic(2 * VEHICLE_RADIUS / nearest);
 }
 
-double in_lane_buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vector<vector<double>>> &predictions) {
+double in_lane_buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vector<Vehicle>> &predictions) {
   
   // Penalize getting close to other vehicles
   
@@ -263,8 +263,7 @@ double out_of_middle_lane_cost(vector<double> d_traj) {
   return logistic(pow(end_d-d_middle_lane, 2));
 }
 
-double calculate_total_cost(vector<vector<double>> &traj, map<int,vector<vector<double>>> &predictions) {
-  
+double calculate_total_cost(vector<vector<double>> &traj, map<int,vector<Vehicle>> &predictions) {
   vector<double> s_traj = traj[0];
   vector<double> d_traj = traj[1];
   
