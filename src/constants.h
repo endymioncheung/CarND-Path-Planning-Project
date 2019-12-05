@@ -44,7 +44,8 @@
 // Vehicle and Track Dimensions //
 //******************************//
 
-#define TRACK_LENGTH    6945.554         // Overall track length [m]
+#define TRACK_LENGTH    6945.554         // Overall track length [m]; approx. 4.32miles
+#define NUM_LANES       3                // Number of lanes [counts]
 #define FOLLOW_DISTANCE 8.0              // Gap follow distance to leading car [m]
 #define VEHICLE_RADIUS  1.25             // Model vehicle as circle to simplify collision detection [m]
 
