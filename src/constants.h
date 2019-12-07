@@ -37,7 +37,7 @@
 #define MAX_INSTANTANEOUS_ACCEL  10.0     // m/s/s
 #define MAX_INSTANTANEOUS_JERK   10.0     // m/s/s/s
 
-#define SPEED_DECREMENT    2              // Speed decrement [mph]
+#define SPEED_DECREMENT    5              // Speed decrement [mph]
 #define VELOCITY_INCREMENT 0.125          // Velocity increment limit [m/s]
 
 //******************************//
@@ -46,7 +46,7 @@
 
 #define TRACK_LENGTH    6945.554         // Overall track length [m]; approx. 4.32miles
 #define NUM_LANES       3                // Number of lanes [counts]
-#define FOLLOW_DISTANCE 8.0              // Gap follow distance to leading car [m]
+#define FOLLOW_DISTANCE 10.0              // Gap follow distance to leading car [m]
 #define VEHICLE_RADIUS  1.25             // Model vehicle as circle to simplify collision detection [m]
 
 //***********************//

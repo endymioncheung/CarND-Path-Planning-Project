@@ -93,7 +93,7 @@ Vehicle Vehicle::choose_next_state(map<int, vector<Vehicle>> &predictions, doubl
   vector<float>::iterator best_cost = min_element(begin(costs), end(costs));
   int best_idx = distance(begin(costs), best_cost);
   Vehicle best_target = final_targets[best_idx];
-  cout << "Best state = " << best_target.state << "\t\tCosts = " << costs[best_idx] << endl;
+  cout << "Best state = " << best_target.state << " \t\tCosts = " << costs[best_idx] << endl;
   return best_target;
 }
 
@@ -423,9 +423,6 @@ vector<Vehicle> Vehicle::generate_trajectory(string state,
   //   to realize the next state
   vector<Vehicle> trajectory;
   
-  // EXPERIMENT
-  Vehicle start, target;
-  
   if (state.compare("KL") == 0) {
     //cout << "lane keep trajectory : " << state << endl;
     trajectory = lane_keep_trajectory(predictions,duration);
@@ -435,6 +432,7 @@ vector<Vehicle> Vehicle::generate_trajectory(string state,
     trajectory = lane_change_trajectory(state, predictions, duration);
     
     // EXPERIMENT
+//    Vehicle start, target;
 //    start  = get_current_car();
 //    target = get_target_for_state(state, predictions, duration);
 //    trajectory.push_back(start);
@@ -528,19 +526,16 @@ vector<float> Vehicle::get_kinematics(string state, map<int,vector<Vehicle>> &pr
     if (is_car_behind) {
       // When there are vehicles both in front and behind ego vehicle,
       // it must travel at the speed of traffic, regardless of preferred buffer
-      cout << "Found vehicle AND behind" << endl;
-      cout << "Vehicle ahead is " << car_ahead.s - current_car_s << endl;
-      cout << "Vehicle behind is " << current_car_s - car_behind.s << endl;
-      target_s_dot = car_ahead.s_dot;
+      cout << "WARNING: Distance to the car ahead  is " << car_ahead.s - current_car_s << " meters" << endl;
+      cout << "WARNING: Distance to the car behind is " << car_behind.s - current_car_s << " meters" << endl;
+      target_s_dot = (car_ahead.s_dot+car_behind.s_dot)/2;
     } else {
       // When there is only a car ahead
-      cout << "Found vehicle ahead only" << endl;
-      cout << "Vehicle is " << car_ahead.s - current_car_s << " meters ahead" << endl;
-//      float max_velocity_in_front = (car_ahead.s - current_car_s - this->preferred_buffer) + car_ahead.s_dot
-                                  - 0.5 * (current_car_s_ddot) * dt;
+      cout << "WARNING: Distance to the car ahead is " << car_ahead.s - current_car_s << " meters" << endl;
+//      float max_velocity_in_front = (car_ahead.s - current_car_s - this->preferred_buffer) + car_ahead.s_dot - 0.5 * (current_car_s_ddot) * dt;
 
       // Limit the target speed up to the vehicle ahead
-      target_s_dot = std::min(max_velocity,car_ahead.s_dot-5*MPH2MPS);
+      target_s_dot = std::min(max_velocity,car_ahead.s_dot-SPEED_DECREMENT*MPH2MPS);
     }
   } else {
     // If there is no car in front or behind
@@ -735,12 +730,16 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
 //  }
 
   // Final check if there are any cars nearby
+  // if so fallback to the lane keep trajectory
   for (auto prediction : predictions) {
     check_nearby_cars(prediction.second);
   }
   bool car_to_left  = this->car_to_left;
   bool car_to_right = this->car_to_right;
-  if (car_to_left || car_to_right) return lane_keep_trajectory(predictions,duration);
+  if (car_to_left || car_to_right) {
+    cout << "Final check - unable to " << state << " because its too close to the nearby car" << endl;
+    return lane_keep_trajectory(predictions,duration);
+  }
   
   // Lane change trajectory
   vector<float> new_lane_kinematics = get_kinematics(state,predictions, target_lane, duration);
