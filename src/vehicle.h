@@ -34,10 +34,10 @@ public:
   // *********************************//
   
   // Mapping for lane change
-  map<string,int> lane_direction = {{"PLCL", 1}, {"LCL", 1},
-                                    {"LCR", -1}, {"PLCR", -1}};
+  map<string,int> lane_direction = {{"PLCL", -1}, {"LCL", -1},
+                                    {"LCR", 1}, {"PLCR", 1}};
   
-  string state = "CS";
+  string state = "KL";
   // vector<string> available_states; // TBD to keep this in the vehicle class
   vector<double> s_traj_coeffs, d_traj_coeffs;
   bool car_to_left, car_to_right, car_in_front;
@@ -47,7 +47,7 @@ public:
   
   // Buffer distance between ego vehicle and vehicle ahead
   // Impact "keep lane" behavior
-  int preferred_buffer = FOLLOW_DISTANCE;
+  double preferred_buffer = VEHICLE_RADIUS + FOLLOW_DISTANCE;
   
   /**
   * Constructors
@@ -61,13 +61,14 @@ public:
   virtual ~Vehicle();
 
   // Vehicle functions
+  Vehicle get_current_car();
   vector<string> successor_states() ;
   void check_nearby_cars(vector<Vehicle> other_cars);
   Vehicle get_nearest_leading_car(int target_lane, map<int,vector<Vehicle>> predictions,
                                                    double duration);
   Vehicle get_target_for_state(string state, map<int,vector<Vehicle>> &predictions,double duration);
   vector<Vehicle> generate_predictions(double traj_start_time, double duration);
-  vector<vector<double>> generate_trajectory_for_target(Vehicle perturbed_target, double duration);
+  vector<vector<double>> generate_trajectory_path_for_target(Vehicle perturbed_target, double duration);
   void realize_next_state(Vehicle &next_state);
   
   // DEBUGGING TOOLS (not used for final release)
@@ -81,16 +82,16 @@ public:
   Vehicle choose_next_state(map<int,vector<Vehicle>> &predictions, double traj_start_time, double duration);
   
   vector<Vehicle> generate_trajectory(string state,
-                                      map<int, vector<Vehicle>> &predictions);
+                                      map<int, vector<Vehicle>> &predictions, double duration);
 
-  vector<float>   get_kinematics(map<int, vector<Vehicle>> &predictions, int lane);
+  vector<float>   get_kinematics(string state, map<int, vector<Vehicle>> &predictions, int lane, double duration);
 
-  vector<Vehicle> constant_speed_trajectory();
-  vector<Vehicle> lane_keep_trajectory(map<int, vector<Vehicle>> &predictions);
+  vector<Vehicle> constant_speed_trajectory(double duration);
+  vector<Vehicle> lane_keep_trajectory(map<int, vector<Vehicle>> &predictions,double duration);
   vector<Vehicle> lane_change_trajectory(string state,
-                                         map<int, vector<Vehicle>> &predictions);
+                                         map<int, vector<Vehicle>> &predictions,double duration);
   vector<Vehicle> prep_lane_change_trajectory(string state,
-                                              map<int, vector<Vehicle>> &predictions);
+                                              map<int, vector<Vehicle>> &predictions,double duration);
 
   bool get_vehicle_behind(map<int, vector<Vehicle>> &predictions, int lane,
                           Vehicle &ref_vehicle);

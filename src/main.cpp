@@ -280,7 +280,7 @@ int main() {
             string other_car_state = "CS";        // Assume the non-ego vehicles are in constant speed initally
             
 //            double next_s = other_car_s + this->s_dot * dt;
-//            double next_d = other_car_d + this->d_dot * dt;
+//            double next_d = 0;
             
             // Store the other car sensor fusion data
             // to list of vehicle objects

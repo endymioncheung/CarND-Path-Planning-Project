@@ -161,7 +161,7 @@ double buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vecto
 
 double in_lane_buffer_cost(vector<double> &s_traj, vector<double> &d_traj, map<int,vector<Vehicle>> &predictions) {
   
-  // Penalize getting close to other vehicles
+  // Penalize getting close to other vehicles in the lane
   
   double nearest = nearest_approach_to_any_cars_in_lane(s_traj, d_traj, predictions);
   return logistic(2 * VEHICLE_RADIUS / nearest);
@@ -263,7 +263,7 @@ double out_of_middle_lane_cost(vector<double> d_traj) {
   return logistic(pow(end_d-d_middle_lane, 2));
 }
 
-double calculate_total_cost(vector<vector<double>> &traj, map<int,vector<Vehicle>> &predictions) {
+double calculate_cost(vector<vector<double>> &traj, map<int,vector<Vehicle>> &predictions) {
   vector<double> s_traj = traj[0];
   vector<double> d_traj = traj[1];
   
