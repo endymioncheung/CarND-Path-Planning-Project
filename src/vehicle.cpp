@@ -450,7 +450,7 @@ vector<Vehicle> Vehicle::generate_trajectory(string state,
   return trajectory;
 }
 
-bool Vehicle::get_vehicle_behind(map<int,vector<Vehicle>> &predictions,
+bool Vehicle::get_car_behind(map<int,vector<Vehicle>> &predictions,
                                  int lane, Vehicle &ref_vehicle) {
   // Returns true if a vehicle is found behind the current vehicle, false
   //   otherwise. The passed reference ref_vehicle is updated if a vehicle is found.
@@ -473,7 +473,7 @@ bool Vehicle::get_vehicle_behind(map<int,vector<Vehicle>> &predictions,
   return found_vehicle;
 }
 
-bool Vehicle::get_vehicle_ahead(map<int,vector<Vehicle>> &predictions,
+bool Vehicle::get_car_ahead(map<int,vector<Vehicle>> &predictions,
                                 int lane, Vehicle &ref_vehicle) {
   
   // Return true if a vehicle is found ahead of the current vehicle, false
@@ -519,8 +519,8 @@ vector<float> Vehicle::get_kinematics(string state, map<int,vector<Vehicle>> &pr
   //target_s_dot = BELOW_SPEED_LIMIT*MPH2MPS;
   
   Vehicle car_ahead, car_behind;
-  bool is_car_ahead  = get_vehicle_ahead(predictions, lane, car_ahead);
-  bool is_car_behind = get_vehicle_behind(predictions, lane, car_behind);
+  bool is_car_ahead  = get_car_ahead(predictions, lane, car_ahead);
+  bool is_car_behind = get_car_behind(predictions, lane, car_behind);
 
   if (is_car_ahead) {
     if (is_car_behind) {
@@ -661,7 +661,7 @@ vector<Vehicle> Vehicle::prep_lane_change_trajectory(string state,
   vector<float> current_lane_kinematics = get_kinematics(state,predictions,current_lane,duration);
   
   Vehicle car_behind;
-  bool is_car_behind = get_vehicle_behind(predictions, current_lane, car_behind);
+  bool is_car_behind = get_car_behind(predictions, current_lane, car_behind);
   if (is_car_behind) {
     // If there is a vehicle behind in the lane
     // then keep the speed of current lane so not to collide with car behind.
