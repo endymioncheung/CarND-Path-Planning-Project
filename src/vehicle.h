@@ -35,7 +35,8 @@ public:
   // *********************************//
   
   // Mapping for lane change
-  map<string,int> lane_direction = {{"PLCL", -1}, {"LCL", -1},
+  map<string,int> lane_direction = {{"KL", 0}, {"CS", 0},
+                                    {"PLCL", -1}, {"LCL", -1},
                                     {"LCR", 1}, {"PLCR", 1}};
 
   int lane;
@@ -71,6 +72,7 @@ public:
   
   // DEBUGGING TOOLS (not used for final release)
   // string display_vehicle_state();
+  // vector<Vehicle> constant_speed_trajectory(double duration);
   
   // *********************************************** //
   //               FSM implementation                //
@@ -86,12 +88,9 @@ public:
   vector<Vehicle> generate_trajectory(string state, map<int, vector<Vehicle>> &predictions, double duration);
   
   // Calculate kinematics for selected trajectory
-  float s_position_at(Vehicle &vehicle, int t);
-  float d_position_at(Vehicle &vehicle, int t);
   vector<float>   get_kinematics(string state, map<int, vector<Vehicle>> &predictions, int lane, double duration);
   
   // Trajectory generation
-  vector<Vehicle> constant_speed_trajectory(double duration);
   vector<Vehicle> lane_keep_trajectory(map<int, vector<Vehicle>> &predictions,double duration);
   vector<Vehicle> lane_change_trajectory(string state,map<int, vector<Vehicle>> &predictions,double duration);
   vector<Vehicle> prep_lane_change_trajectory(string state,map<int, vector<Vehicle>> &predictions,double duration);
@@ -103,7 +102,7 @@ public:
   // *********************************************** //
   // Non-FSM implementation (currently not in used)  //
   // *********************************************** //
-  Vehicle get_nearest_leading_car(int target_lane, map<int,vector<Vehicle>> predictions, double duration);
+  Vehicle get_nearest_leading_car_for_lane(int target_lane, map<int,vector<Vehicle>> predictions, double duration);
   Vehicle get_target_for_state(string state, map<int,vector<Vehicle>> &predictions,double duration);
   vector<vector<double>> generate_trajectory_path_for_target(Vehicle perturbed_target, double duration);
   

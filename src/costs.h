@@ -190,13 +190,13 @@ double efficiency_cost(vector<double> &s_traj) {
 
 double max_accel_cost(vector<double> &s_traj) {
   
-  // Penalize acceleration exceeding MAX_INSTANTANEOUS_ACCEL
+  // Penalize acceleration exceeding MAX_INSTANT_ACCEL
   
   vector<double> s_dot_traj  = velocities_in_traj(s_traj);
   vector<double> s_ddot_traj = velocities_in_traj(s_dot_traj);
   
   for (double s_ddot : s_ddot_traj) {
-    if (s_ddot > MAX_INSTANTANEOUS_ACCEL) {
+    if (s_ddot > MAX_INSTANT_ACCEL) {
       return 1;
     }
   }
@@ -212,7 +212,7 @@ double max_jerk_cost(vector<double> &s_traj) {
   vector<double> s_ddot_traj  = velocities_in_traj(s_dot_traj);
   vector<double> s_dddot_traj = velocities_in_traj(s_ddot_traj);
   for (double s_dddot : s_dddot_traj) {
-    if (s_dddot > MAX_INSTANTANEOUS_JERK) {
+    if (s_dddot > MAX_INSTANT_JERK) {
       return 1;
     }
   }

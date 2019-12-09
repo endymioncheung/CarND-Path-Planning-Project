@@ -7,12 +7,11 @@
 
 #define COLLISION_COST_WEIGHT       99999
 #define IN_LANE_BUFFER_COST_WEIGHT  1000
+#define BUFFER_COST_WEIGHT          100
 #define EFFICIENCY_COST_WEIGHT      1000
 #define NOT_MIDDLE_LANE_COST_WEIGHT 100
-#define BUFFER_COST_WEIGHT          10
 
 // #define SPEED_LIMIT_COST_WEIGHT    9999
-// #define MAX_ACCEL_COST_WEIGHT      9999
 // #define MAX_JERK_COST_WEIGHT       9999
 // #define AVG_ACCEL_COST_WEIGHT      1000
 // #define AVG_JERK_COST_WEIGHT       1000
@@ -30,14 +29,15 @@
 //     Rules & Limits    //
 //***********************//
 
-#define SPEED_LIMIT              50       // Speed limit [mph]
+#define SPEED_LIMIT              50.0     // Speed limit [mph]
 #define BELOW_SPEED_LIMIT (SPEED_LIMIT-2) // Below speed limit [mph]
 #define EXPECTED_ACC_IN_ONE_SEC  1.0      // m/s
 #define EXPECTED_JERK_IN_ONE_SEC 2.0      // m/s/s
-#define MAX_INSTANTANEOUS_ACCEL  10.0     // m/s/s
-#define MAX_INSTANTANEOUS_JERK   10.0     // m/s/s/s
+#define MAX_INSTANT_ACCEL        10.0     // m/s/s
+#define INSTANT_ACCEL_LIMIT (MAX_INSTANT_ACCEL-2)     // m/s/s
+#define MAX_INSTANT_JERK         10.0     // m/s/s/s
 
-#define SPEED_DECREMENT    5              // Speed decrement [mph]
+#define SPEED_DECREMENT    7              // Speed decrement [mph]
 #define VELOCITY_INCREMENT 0.125          // Velocity increment limit [m/s]
 
 //******************************//
@@ -46,7 +46,7 @@
 
 #define TRACK_LENGTH    6945.554         // Overall track length [m]; approx. 4.32miles
 #define NUM_LANES       3                // Number of lanes [counts]
-#define FOLLOW_DISTANCE 10.0              // Gap follow distance to leading car [m]
+#define FOLLOW_DISTANCE 15.0             // Gap follow distance to leading car [m]
 #define VEHICLE_RADIUS  1.25             // Model vehicle as circle to simplify collision detection [m]
 
 //***********************//
