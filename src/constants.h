@@ -77,9 +77,4 @@
 #define NUM_WAYPOINTS_AHEAD       5     // [counts]
 #define WAYPOINT_DIST_INCREMENT 0.5     // Distance increment [m]
 
-// Sigma values for perturbing goal to target
-#define SIGMA_S      10.0               // Sigma for longitudinal distance, s [m]
-#define SIGMA_S_DOT  3.0                // Sigma for longitudinal velocity, s_dot [m/s]
-#define SIGMA_S_DDOT 0.1                // Sigma for longitudinal acceleration, s_ddot [m/s/s]
-
 #endif

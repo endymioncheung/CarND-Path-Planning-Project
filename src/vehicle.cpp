@@ -95,7 +95,6 @@ Vehicle Vehicle::choose_next_state(map<int, vector<Vehicle>> &predictions, doubl
   vector<float>::iterator best_cost = min_element(begin(costs), end(costs));
   int best_idx = distance(begin(costs), best_cost);
   Vehicle best_target = final_targets[best_idx];
-  //cout << "Best state = " << best_target.state << " \t\tCosts = " << costs[best_idx] << endl;
   
   return best_target;
 }
@@ -115,7 +114,7 @@ vector<string> Vehicle::successor_states() {
   // "LCL"/"LCR"   = Lane Change Left / Lane Change Right
   // "PLCL"/"PLCR" = Prepare Lane Change Left / Prepare Lane Change Right
 
-  // Current vehicle state
+  // Ego vehicle state
   int  current_lane    = this->lane;
   bool car_to_left     = this->car_to_left;
   bool car_to_right    = this->car_to_right;
@@ -123,13 +122,9 @@ vector<string> Vehicle::successor_states() {
   // Always start FSM with the lane keep state
   vector<string> states;
   states.push_back("KL");
-  
-//  cout << "Lane #" << lane << endl << "State: " << state << endl;
-  
+   
   // Create the list of plausible sucessor states
   if(state.compare("KL") == 0) {
-    //cout << "State = KL" << endl;
-    
     states.push_back("PLCL");
     states.push_back("PLCR");
   } else if (state.compare("PLCL") == 0) {
@@ -155,11 +150,16 @@ vector<string> Vehicle::successor_states() {
 
 Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &predictions, double duration) {
   
-  // Return target vehicle state
+  // Return target ego vehicle state
   // (position, velocity and acceleration) in Freenet coordinates
 
-  // Current ego vehicle state
-  //string current_state  = this->state;
+  //**************************************//
+  //           Ego Vehice State           //
+  //**************************************//
+  
+  bool   car_to_left  = this->car_to_left;
+  bool   car_to_right = this->car_to_right;
+  
   double current_s      = this->s;
   double current_s_dot  = this->s_dot;
   
@@ -170,18 +170,17 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
   string target_state   = state;
   int    current_lane   = std::round((current_d - LANE_WIDTH/2) / LANE_WIDTH);
   
-  int target_lane;
-  bool car_to_left  = this->car_to_left;
-  bool car_to_right = this->car_to_right;
-  
+  // Logic to check the possible intended lane for the given vehicle state
+  int  intended_lane;
   if((state.compare("LCL") == 0 || state.compare("PLCL") == 0)  && !car_to_left && (current_lane > 0)) {
     // Allow to change lane to left if there is no car on the left lane
-    target_lane = current_lane - 1;
+    intended_lane = current_lane - 1;
   } else if ((state.compare("LCR") == 0 || state.compare("PLCR") == 0) && !car_to_right && (current_lane < NUM_LANES-1)) {
     // Allow to change lane to right if there is no car on the right lane
-    target_lane = current_lane + 1;
+    intended_lane = current_lane + 1;
   } else {
-    target_lane = current_lane;
+    // Otherwise stays in the current lane
+    intended_lane = current_lane;
   }
   
   //**************************************//
@@ -205,12 +204,12 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
   //      Ego Vehice Lateral Dynamics     //
   //**************************************//
 
-  double target_d      = target_lane*LANE_WIDTH + LANE_WIDTH/2;
-  double target_d_dot  = 0;
-  double target_d_ddot = 0;
+  double target_d      = intended_lane*LANE_WIDTH + LANE_WIDTH/2;
+//  double target_d_dot  = 0;
+//  double target_d_ddot = 0;
   
-//  double target_d_dot  = (target_d - current_d) / duration;
-//  double target_d_ddot = (target_d_dot - current_d_dot) / duration;
+  double target_d_dot   = (target_d - current_d) / duration;
+  double target_d_ddot  = (target_d_dot - current_d_dot) / duration;
   double combined_accel = sqrt(target_s_ddot*target_s_ddot + target_d_ddot*target_d_ddot);
   
   // No change in lateral dynamics if the
@@ -226,9 +225,8 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
   }
 
   // Find the leading vehicle in the target lane
-  Vehicle leading_car       = get_nearest_leading_car_for_lane(target_lane, predictions, duration);
+  Vehicle leading_car       = get_nearest_leading_car_for_lane(intended_lane, predictions, duration);
   double  leading_car_s     = leading_car.s;
-  //double  leading_car_s_dot = leading_car.s_dot;
 
   // If the target vehicle poition is too close to the leading vehicle
   // then match the position and speed of target vehicle to leading vehicle.
@@ -252,12 +250,12 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
     }
 
     // cout << "NEARBY LEADING VEHICLE DETECTED!  ";
-    // cout << ", lane: "  << target_lane
+    // cout << ", lane: "  << intended_lane
     //      << "s: "       << leading_car_s
     //      << ", speed: " << leading_car_s_dot << endl;
   }
 
-  Vehicle target = Vehicle(target_lane, target_state,
+  Vehicle target = Vehicle(intended_lane, target_state,
                            target_s, target_s_dot, target_s_ddot,
                            target_d, target_d_dot, target_d_ddot);
   
@@ -270,13 +268,13 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
   bool car_in_front  = this->car_in_front;
   if (target_state.compare("KL") == 0 && car_in_front) {
 //    cout << "Emergency vehicle stop" << endl;
-    target_lane   = current_lane;
+    intended_lane   = current_lane;
     target_state  = "KL";
     target_s_dot  = 0.0; // Request emergency stop immediately
     target_s_ddot = (target_s_dot - current_s_dot) / duration;
     target_s      = current_s + (current_s_dot + target_s_dot) / 2 * duration;
 
-    return Vehicle(target_lane, target_state,
+    return Vehicle(intended_lane, target_state,
                    target_s, target_s_dot, target_s_ddot,
                    target_d, target_d_dot, target_d_ddot);
   }
@@ -288,7 +286,7 @@ void Vehicle::check_nearby_cars(vector<Vehicle> other_cars) {
   
   // Prepare to change lane logic to check if there is a car
   // close to left or right of the ego vehicle and
-  // restricting the next possible vehicle states
+  // limiting the next possible vehicle states
   
   // Check if there are other cars nearby the ego vehicle
   
@@ -308,22 +306,22 @@ void Vehicle::check_nearby_cars(vector<Vehicle> other_cars) {
     
     if (other_car.s > this->s && s_diff < FOLLOW_DISTANCE) {
       if (-2 < d_diff && d_diff < 2) {
+        cout << "CAUTION: CAR AHEAD within FOLLOW_DISTANCE - Distance to the car ahead: " << s_diff << " meters" << endl;
         this->car_in_front = true;
-//          cout << "CAUTION: CAR AHEAD within FOLLOW_DISTANCE - Distance to the car ahead: " << s_diff << " meters" << endl;
       } else if (s_diff < FOLLOW_DISTANCE) {
         if (-6 < d_diff && d_diff < -2) {
+          //cout << "CAUTION: CAR TO THE LEFT!!   Distance to left car: " << other_car.s - this->s << " meters" << endl;
           this->car_to_left = true;
-//          cout << "CAUTION: CAR TO THE LEFT!!   Distance to left car: " << other_car.s - this->s << " meters" << endl;
         } else if (2 < d_diff && d_diff < 6) {
+          //cout << "CAUTION: CAR TO THE RIGHT!!  Distance to right car: " << other_car.s - this->s << " meters" << endl;
           this->car_to_right = true;
-//          cout << "CAUTION: CAR TO THE RIGHT!!  Distance to right car: " << other_car.s - this->s << " meters" << endl;
         }
       }
     }
   }
 }
 
-Vehicle Vehicle::get_nearest_leading_car_for_lane(int target_lane,
+Vehicle Vehicle::get_nearest_leading_car_for_lane(int intended_lane,
                                         map<int,vector<Vehicle>> predictions,
                                         double duration) {
     
@@ -352,7 +350,8 @@ Vehicle Vehicle::get_nearest_leading_car_for_lane(int target_lane,
     double pred_end_d = pred_traj[pred_traj.size()-1].d;
     int    pred_lane  = std::round( (pred_end_d - LANE_WIDTH/2) / LANE_WIDTH);
     
-    if (pred_lane == target_lane) {
+    if (pred_lane == intended_lane) {
+      
       //************************************************//
       // Predicted leading vehicle longitudnal dynamics //
       //************************************************//
@@ -397,7 +396,7 @@ Vehicle Vehicle::get_nearest_leading_car_for_lane(int target_lane,
   
   // TODO: Replace the default constant speed with GNB classifier to predict whether it is "left/keep/right"
   string nearet_leading_car_state = "CS";
-  Vehicle nearest_leading_car = {Vehicle(target_lane, nearet_leading_car_state,
+  Vehicle nearest_leading_car = {Vehicle(intended_lane, nearet_leading_car_state,
                                          nearest_leading_car_s, nearest_leading_car_s_dot, nearest_leading_car_s_ddot,
                                          nearest_leading_car_d, nearest_leading_car_d_dot, nearest_leading_car_d_ddot)};
   return nearest_leading_car;
@@ -462,6 +461,27 @@ vector<vector<double>> Vehicle::generate_trajectory_path_for_target(Vehicle targ
   return {s_traj, d_traj};
 }
 
+void Vehicle::realize_next_state(Vehicle &next_state) {
+
+  // Set vehicle state and kinematics for ego vehicle
+  //   using the last state of the trajectory.
+  
+  this->lane   = next_state.lane;
+  this->state  = next_state.state;
+  
+  this->s      = next_state.s;
+  this->s_dot  = next_state.s_dot;
+  this->s_ddot = next_state.s_ddot;
+  
+  this->d      = next_state.d;
+  this->d_dot  = next_state.d_dot;
+  this->d_ddot = next_state.d_ddot;
+  
+  // DEBUG
+  cout << "State selected : " << next_state.state << endl;
+  //cout << "Target lane  : " << next_state.lane << endl << endl;
+}
+
 //string Vehicle::display_vehicle_state() {
 //
 //  // DEBUGGING TOOLS (not used for final release)
@@ -479,7 +499,10 @@ vector<vector<double>> Vehicle::generate_trajectory_path_for_target(Vehicle targ
 //  return oss.str();
 //}
 
-// Work in progress FSM logic..
+/* ********************************************************** */
+// Work in progress Finite State Machine (FSM) impelmentation //
+//       not working yet from this line and below...          //
+/* ********************************************************** */
 
 vector<Vehicle> Vehicle::generate_trajectory(string state,
                                              map<int, vector<Vehicle>> &predictions, double duration) {
@@ -603,26 +626,26 @@ vector<float> Vehicle::get_kinematics(string state, map<int,vector<Vehicle>> &pr
 
   int current_lane  = this->d / LANE_WIDTH;
   
-  int target_lane;
+  int intended_lane;
   bool car_to_left  = this->car_to_left;
   bool car_to_right = this->car_to_right;
   
   if(state.compare("LCL") == 0 && !car_to_left && (current_lane > 0)) {
     // Allow to change lane to left if there is no car on the left lane
-    target_lane = current_lane - 1;
+    intended_lane = current_lane - 1;
   } else if (state.compare("LCR") == 0 && !car_to_right && (current_lane < NUM_LANES-1)) {
     // Allow to change lane to right if there is no car on the right lane
-    target_lane = current_lane + 1;
+    intended_lane = current_lane + 1;
   } else {
-    target_lane = current_lane;
+    intended_lane = current_lane;
   }
   
-  target_d = target_lane*LANE_WIDTH + LANE_WIDTH/2;
+  target_d = intended_lane*LANE_WIDTH + LANE_WIDTH/2;
   target_d_dot  = 0;
   target_d_ddot = 0;
   
   // Find the leading vehicle in the target lane
-  Vehicle leading_car       = get_nearest_leading_car_for_lane(target_lane, predictions, duration);
+  Vehicle leading_car       = get_nearest_leading_car_for_lane(intended_lane, predictions, duration);
   double  leading_car_s     = leading_car.s;
   double  leading_car_s_dot = leading_car.s_dot;
 
@@ -639,7 +662,7 @@ vector<float> Vehicle::get_kinematics(string state, map<int,vector<Vehicle>> &pr
     }
 
     // cout << "NEARBY LEADING VEHICLE DETECTED!  ";
-    // cout << ", lane: "  << target_lane
+    // cout << ", lane: "  << intended_lane
     //      << "s: "       << leading_car_s
     //      << ", speed: " << leading_car_s_dot << endl;
   }
@@ -651,7 +674,7 @@ vector<float> Vehicle::get_kinematics(string state, map<int,vector<Vehicle>> &pr
 vector<Vehicle> Vehicle::lane_keep_trajectory(map<int,vector<Vehicle>> &predictions, double duration) {
   
   // Generate a keep lane trajectory
-  int    target_lane  = this->lane;
+  int    intended_lane  = this->lane;
   string target_state = "KL";
   
   vector<float> lane_keep_kinematics = get_kinematics(target_state, predictions,this->lane,duration);
@@ -667,7 +690,7 @@ vector<Vehicle> Vehicle::lane_keep_trajectory(map<int,vector<Vehicle>> &predicti
   // Keep lane trajectory
   vector<Vehicle> trajectory;
   trajectory.push_back(Vehicle(this->lane,this->state,this->s,this->s_dot,this->s_ddot,this->d,this->d_dot,this->d_ddot));
-  trajectory.push_back(Vehicle(target_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
+  trajectory.push_back(Vehicle(intended_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
   
   return trajectory;
 }
@@ -695,20 +718,20 @@ vector<Vehicle> Vehicle::prep_lane_change_trajectory(string state,
   } else {
     // If there is no vehicle beind in the lane
     // then calculate the kinematics of ego vehicle driving in the new lane
-    int target_lane;
+    int intended_lane;
     bool car_to_left  = this->car_to_left;
     bool car_to_right = this->car_to_right;
     
     if(state.compare("LCL") == 0 && !car_to_left && (current_lane > 0)) {
       // Allow to change lane to left if there is no car on the left lane
-      target_lane = current_lane - 1;
+      intended_lane = current_lane - 1;
     } else if (state.compare("LCR") == 0 && !car_to_right && (current_lane < NUM_LANES-1)) {
       // Allow to change lane to right if there is no car on the right lane
-      target_lane = current_lane + 1;
+      intended_lane = current_lane + 1;
     } else {
-      target_lane = current_lane;
+      intended_lane = current_lane;
     }
-    vector<float> new_lane_kinematics = get_kinematics(state,predictions, target_lane,duration);
+    vector<float> new_lane_kinematics = get_kinematics(state,predictions, intended_lane,duration);
 
     // Choose kinematics with the lowest velocity
     vector<float> best_kinematics = (new_lane_kinematics[1] < current_lane_kinematics[1]) ?
@@ -725,11 +748,11 @@ vector<Vehicle> Vehicle::prep_lane_change_trajectory(string state,
 
   // Prepare lane change trajectory
   
-  int    target_lane  = this->lane;
-  string target_state = (target_lane > current_lane) ? "PLCR" : "PLCL";
+  int    intended_lane  = this->lane;
+  string target_state = (intended_lane > current_lane) ? "PLCR" : "PLCL";
   vector<Vehicle> trajectory;
   trajectory.push_back(Vehicle(this->lane,this->state,this->s,this->s_dot,this->s_ddot,this->d,this->d_dot,this->d_ddot));
-  trajectory.push_back(Vehicle(target_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
+  trajectory.push_back(Vehicle(intended_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
   
   return trajectory;
 }
@@ -758,22 +781,22 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
   // Lane change trajectory
   double current_d      = this->d;
   int current_lane  = std::round((current_d - LANE_WIDTH/2) / LANE_WIDTH);
-  int target_lane;
+  int intended_lane;
   bool car_to_left  = this->car_to_left;
   bool car_to_right = this->car_to_right;
   
   if(state.compare("LCL") == 0 && !car_to_left && (current_lane > 0)) {
     // Allow to change lane to left if there is no car on the left lane
-    target_lane = current_lane - 1;
+    intended_lane = current_lane - 1;
   } else if (state.compare("LCR") == 0 && !car_to_right && (current_lane < NUM_LANES-1)) {
     // Allow to change lane to right if there is no car on the right lane
-    target_lane = current_lane + 1;
+    intended_lane = current_lane + 1;
   } else {
-    target_lane = current_lane;
+    intended_lane = current_lane;
   }
   string target_state = state;
   
-  vector<float> new_lane_kinematics = get_kinematics(state, predictions, target_lane, duration);
+  vector<float> new_lane_kinematics = get_kinematics(state, predictions, intended_lane, duration);
   double target_s      = new_lane_kinematics[0];
   double target_s_dot  = new_lane_kinematics[1];
   double target_s_ddot = new_lane_kinematics[2];
@@ -784,30 +807,9 @@ vector<Vehicle> Vehicle::lane_change_trajectory(string state,
     
   vector<Vehicle> trajectory;
   trajectory.push_back(Vehicle(this->lane,this->state,this->s,this->s_dot,this->s_ddot,this->d,this->d_dot,this->d_ddot));
-  trajectory.push_back(Vehicle(target_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
+  trajectory.push_back(Vehicle(intended_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
 
   return trajectory;
-}
-
-void Vehicle::realize_next_state(Vehicle &next_state) {
-
-  // Set vehicle state and kinematics for ego vehicle
-  //   using the last state of the trajectory.
-  
-  this->lane   = next_state.lane;
-  this->state  = next_state.state;
-  
-  this->s      = next_state.s;
-  this->s_dot  = next_state.s_dot;
-  this->s_ddot = next_state.s_ddot;
-  
-  this->d      = next_state.d;
-  this->d_dot  = next_state.d_dot;
-  this->d_ddot = next_state.d_ddot;
-  
-  // DEBUG
-  cout << "State selected : " << next_state.state << endl;
-  //cout << "Target lane  : " << next_state.lane << endl << endl;
 }
 
 //vector<Vehicle> Vehicle::constant_speed_trajectory(double duration) {
@@ -815,7 +817,7 @@ void Vehicle::realize_next_state(Vehicle &next_state) {
 //  double dt = duration / N_SAMPLES;
 //
 //  // Ego vehicle target state
-//  int    target_lane   = this->lane;
+//  int    intended_lane   = this->lane;
 //  string target_state  = "CS";
 //  double target_s_dot  = BELOW_SPEED_LIMIT*MPH2MPS; // [m/s]
 //  double target_s_ddot = 0; // Constant acceleration to minimize jerk
@@ -827,6 +829,6 @@ void Vehicle::realize_next_state(Vehicle &next_state) {
 //
 //  // Constant speed trajectory
 //  vector<Vehicle> trajectory= {Vehicle(this->lane,this->state,this->s,this->s_dot,this->s_ddot,this->d,this->d_dot,this->d_ddot)};
-//  trajectory.push_back(Vehicle(target_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
+//  trajectory.push_back(Vehicle(intended_lane,target_state,target_s,target_s_dot,target_s_ddot,target_d,target_d_dot,target_d_ddot));
 //  return trajectory;
 //}

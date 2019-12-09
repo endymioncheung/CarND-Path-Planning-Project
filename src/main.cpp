@@ -14,8 +14,6 @@
 #include "constants.h"
 #include "spline_wrapper.h"
 #include "vehicle.h"
-//#include "costs.h"
-#include "classifier.h"
 
 // for convenience
 using namespace std;
@@ -28,18 +26,6 @@ using std::ifstream;
 int main() {
   // Read in the training and testing datasets
   // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
-  vector<vector<double>> X_train = Load_State("./all_states.txt");
-  vector<string>         Y_train = Load_Label("./all_labels.txt");
-
-  // Experiment: making both training and test datasets the same
-  vector<vector<double>> X_test = X_train;
-  vector<string>         Y_test = Y_train;
-  
-  // Gaussian Naive Bayes (GNB) classifier
-  GNB gnb = GNB();
-  
-  // Train GNB classifier with datasets
-  gnb.train(X_train, Y_train);
   
   uWS::Hub h;
 
@@ -82,7 +68,7 @@ int main() {
   	map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx, &map_waypoints_dy, &ego_car, &gnb](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s, &map_waypoints_dx, &map_waypoints_dy, &ego_car](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -128,7 +114,8 @@ int main() {
           vector<double> next_y_vals;
 
           //****************************************************//
-          //   Create higher resolution interpolated waypoints  //
+          //        Create coarse interpolated waypoints        //
+          //             around the the ego vehicle             //
           //****************************************************//
 
           int num_waypoints       = map_waypoints_x.size(); // highway_map.csv has 181 waypoints
@@ -136,7 +123,7 @@ int main() {
           vector<double> coarse_waypoints_s, coarse_waypoints_x, coarse_waypoints_y,
                                             coarse_waypoints_dx, coarse_waypoints_dy;
 
-          // Sample waypoints behind and ahead of the ego vehicle
+          // Manually sample waypoints behind and ahead of the ego vehicle
           for (int i = -NUM_WAYPOINTS_BEHIND; i < NUM_WAYPOINTS_AHEAD; i++) {
 
             // Referencing the waypoints behind index
@@ -164,21 +151,22 @@ int main() {
           }
 
           // Waypoints interpolation
-          int num_interpolation_points = (coarse_waypoints_s[coarse_waypoints_s.size()-1] - coarse_waypoints_s[0]) / WAYPOINT_DIST_INCREMENT;
+          int num_interpolation_points = round((coarse_waypoints_s[coarse_waypoints_s.size()-1] - coarse_waypoints_s[0]) / WAYPOINT_DIST_INCREMENT);
           vector<double> interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y, interpolated_waypoints_dx, interpolated_waypoints_dy;
           interpolated_waypoints_x  = interpolate_points(coarse_waypoints_s, coarse_waypoints_x,  WAYPOINT_DIST_INCREMENT, num_interpolation_points);
           interpolated_waypoints_y  = interpolate_points(coarse_waypoints_s, coarse_waypoints_y,  WAYPOINT_DIST_INCREMENT, num_interpolation_points);
           interpolated_waypoints_dx = interpolate_points(coarse_waypoints_s, coarse_waypoints_dx, WAYPOINT_DIST_INCREMENT, num_interpolation_points);
           interpolated_waypoints_dy = interpolate_points(coarse_waypoints_s, coarse_waypoints_dy, WAYPOINT_DIST_INCREMENT, num_interpolation_points);
 
-          // Interpolated Freenet s position
+          // Interpolated waypoints Freenet s position
           interpolated_waypoints_s.push_back(coarse_waypoints_s[0]);
           for (int i = 1; i < num_interpolation_points; i++) {
               interpolated_waypoints_s.push_back(coarse_waypoints_s[0] + i * WAYPOINT_DIST_INCREMENT);
           }
 
           //****************************************//
-          //     Sub path and ego vehicle states    //
+          //         Sub path definition and        //
+          //           ego vehicle states           //
           //****************************************//
 
           double s_pos, s_dot, s_ddot;
@@ -244,7 +232,8 @@ int main() {
             d_ddot = acc_x * dx + acc_y * dy;
           }
 
-          // Set the ego vehicle Freenet coordinates (position, velocity and acceleration)
+          // Set the ego vehicle Freenet coordinates
+          // (position, velocity and acceleration)
           ego_car.s      = s_pos;
           ego_car.s_dot  = s_dot;
           ego_car.s_ddot = s_ddot;
@@ -257,6 +246,7 @@ int main() {
 
           //**********************************************************//
           // Generate trajectory predictions using sensor fusion data //
+          //             read from the highway.csv file               //
           //**********************************************************//
 
           // Sensor fusion data format for each car in the CSV file is:
@@ -279,36 +269,43 @@ int main() {
             double other_car_vel   = sqrt(pow(other_car_vx, 2) + pow(other_car_vy, 2));
             string other_car_state = "CS";        // Assume the non-ego vehicles are in constant speed initally
             
-//            double next_s = other_car_s + this->s_dot * dt;
-//            double next_d = 0;
-            
             // Store the other car sensor fusion data
             // to list of vehicle objects
+            // Assume each non-ego vehicle from sensor fusion data is driving
+            // with constant speed in the direction of the road (i.e. s_ddot = 0, d_dot = 0; d_ddot = 0)
             Vehicle other_car = Vehicle(other_car_lane, other_car_state, other_car_s, other_car_vel, 0, other_car_d, 0, 0);
             other_car.lane    = other_car_lane;
             other_cars.push_back(other_car);
 
-            // Generate and store prediction for each non-ego vehicle
+            // Generate and store prediction each non-ego vehicle into a list
             vector<Vehicle> preds = other_car.generate_predictions(traj_start_time, duration);
             predictions[other_car_id] = preds;
           }
 
           //*****************************//
           //   Finding the best target   //
+          //      for ego vehicle        //
           //*****************************//
           
+          // Check nerarby vehicles that are:
+          // in front, on the left and right of the ego vehicle
           ego_car.check_nearby_cars(other_cars);
+          
+          // Determine the best target (kinenematics in Freent) for ego vehicle
+          // based on the prediction of other vehicles and the duration of the simulation
           Vehicle best_target = ego_car.choose_next_state(predictions,traj_start_time, duration);
           ego_car.realize_next_state(best_target);
           
-//          Vehicle vehicle_ahead;
-//          ego_car.get_vehicle_ahead(predictions,ego_car.lane,vehicle_ahead);
-//          
-//          Vehicle vehicle_behind;
-//          ego_car.get_vehicle_behind(predictions,ego_car.lane,vehicle_behind);
+          // Get the vehicle ahead and behind the ego vehicle
+          // not used in the non-FSM implementation
+          // Vehicle vehicle_ahead;
+          // ego_car.get_vehicle_ahead(predictions,ego_car.lane,vehicle_ahead);
+          // Vehicle vehicle_behind;
+          // ego_car.get_vehicle_behind(predictions,ego_car.lane,vehicle_behind);
           
           //*****************************//
           //      Creating new path      //
+          //     for the best target     //
           //*****************************//
 
           // Converting the Freenet coordinate back to the global map coordinate
@@ -341,8 +338,8 @@ int main() {
               coarse_y_traj.push_back(ref_y1);
           }
 
-          // Last two points of coarse trajectory:
-          // current s + 30 meters, 60 meters
+          // Define the last two points of coarse trajectory:
+          // current ego vehicle s position + 30 meters, 60 meters
           double target_s1 = s_pos + 30;
           double target_d1 = best_target.d;
           vector<double> target_x1y1 = getXY(target_s1, target_d1, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
@@ -363,12 +360,12 @@ int main() {
 
           double current_s      = s_pos;
           double current_s_dot  = s_dot;
-          // double current_s_ddot = s_ddot; // not used
 
           double target_s_dot   = best_target.s_dot;
           for (int i = 0; i < (NUM_PATH_POINTS - subpath_size); i++) {
+            double diff_s_dot = fabs(target_s_dot - current_s_dot);
             double vel_increment;
-            if (fabs(target_s_dot - current_s_dot) < 2 * VELOCITY_INCREMENT) {
+            if (diff_s_dot < 2 * VELOCITY_INCREMENT) {
               vel_increment = 0;
             } else {
               // Increase the ego vehicle speed if target speed is not reached yet
@@ -389,7 +386,7 @@ int main() {
               next_x_vals.push_back(previous_path_x[i]);
               next_y_vals.push_back(previous_path_y[i]);
           }
-          // Add the generated xy points to the planning path
+          // Add the generated (x,y) points to the planning path
           for (int i = 0; i < interpolated_x_traj.size(); i++) {
               next_x_vals.push_back(interpolated_x_traj[i]);
               next_y_vals.push_back(interpolated_y_traj[i]);

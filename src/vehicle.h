@@ -34,10 +34,6 @@ public:
   //        (not used for ego car)    //
   // *********************************//
   
-  // Mapping for lane change
-  map<string,int> lane_direction = {{"KL", 0}, {"CS", 0},
-                                    {"PLCL", -1}, {"LCL", -1},
-                                    {"LCR", 1}, {"PLCR", 1}};
 
   int lane;
   string state = "KL";
@@ -62,21 +58,28 @@ public:
   // Vehicle functions
   
   // *********************************************** //
-  //             Useful helper functions             //
+  //     Non Finite State Machine Implementation     //
+  //               Currently in used                 //
   // *********************************************** //
+  
+  Vehicle get_nearest_leading_car_for_lane(int target_lane, map<int,vector<Vehicle>> predictions, double duration);
+  Vehicle get_target_for_state(string state, map<int,vector<Vehicle>> &predictions,double duration);
+  vector<vector<double>> generate_trajectory_path_for_target(Vehicle perturbed_target, double duration);
+  
   // Check other cars nearby ego vehicle
   void check_nearby_cars(vector<Vehicle> other_cars);
   
   // Update the vehicle state
   void realize_next_state(Vehicle &next_state);
   
-  // DEBUGGING TOOLS (not used for final release)
+  // DEBUGGING TOOLS
   // string display_vehicle_state();
-  // vector<Vehicle> constant_speed_trajectory(double duration);
   
   // *********************************************** //
-  //               FSM implementation                //
+  //       Finite State Machine implementation       //
+  //                 not working yet....             //
   // *********************************************** //
+  
   Vehicle get_current_car();
   
   // Generate predictions for (non-ego) vehicle
@@ -90,22 +93,16 @@ public:
   // Calculate kinematics for selected trajectory
   vector<float>   get_kinematics(string state, map<int, vector<Vehicle>> &predictions, int lane, double duration);
   
-  // Trajectory generation
+  // Trajectories generation
   vector<Vehicle> lane_keep_trajectory(map<int, vector<Vehicle>> &predictions,double duration);
-  vector<Vehicle> lane_change_trajectory(string state,map<int, vector<Vehicle>> &predictions,double duration);
   vector<Vehicle> prep_lane_change_trajectory(string state,map<int, vector<Vehicle>> &predictions,double duration);
+  vector<Vehicle> lane_change_trajectory(string state,map<int, vector<Vehicle>> &predictions,double duration);
 
   // Find the vehicles behind and ahead
   bool get_car_behind(map<int, vector<Vehicle>> &predictions, int lane, Vehicle &ref_vehicle);
   bool get_car_ahead( map<int, vector<Vehicle>> &predictions, int lane, Vehicle &ref_vehicle);
 
-  // *********************************************** //
-  // Non-FSM implementation (currently not in used)  //
-  // *********************************************** //
-  Vehicle get_nearest_leading_car_for_lane(int target_lane, map<int,vector<Vehicle>> predictions, double duration);
-  Vehicle get_target_for_state(string state, map<int,vector<Vehicle>> &predictions,double duration);
-  vector<vector<double>> generate_trajectory_path_for_target(Vehicle perturbed_target, double duration);
-  
+  // vector<Vehicle> constant_speed_trajectory(double duration);
 };
 
 #endif
