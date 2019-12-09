@@ -130,37 +130,24 @@ vector<string> Vehicle::successor_states() {
   if(state.compare("KL") == 0) {
     //cout << "State = KL" << endl;
     
-    // Get ready to prepare to change lane
-    // Allow to turn left if there is no car on the left lane
+    states.push_back("PLCL");
+    states.push_back("PLCR");
+  } else if (state.compare("PLCL") == 0) {
+    //cout << "State = PLCL" << endl;
+    // Allow change lane to left
+    // so long it is not in the outermost left lane
     if ((current_lane > 0) && !car_to_left) {
-      //cout << "Ready to change to LEFT" << endl;
+      states.push_back("PLCL");
       states.push_back("LCL");
     }
-
-    // Allow to turn right if there is no car on the right lane
-    if ((current_lane < NUM_LANES-1) && !car_to_right) {
-      //cout << "Ready to change to RIGHT" << endl;
+  } else if (state.compare("PLCR") == 0) {
+    //cout << "State = PLCR" << endl;
+    // Allow change lane to right
+    // so long it is not in the outermost right lane
+    if ((current_lane < NUM_LANES-1) && !car_to_right){
+      states.push_back("PLCR");
       states.push_back("LCR");
     }
-    
-//    states.push_back("PLCL");
-//    states.push_back("PLCR");
-//  } else if (state.compare("PLCL") == 0) {
-//    //cout << "State = PLCL" << endl;
-//    // Allow change lane to left
-//    // so long it is not in the outermost left lane
-//    if ((current_lane > 0) && !car_to_left) {
-//      states.push_back("PLCL");
-//      states.push_back("LCL");
-//    }
-//  } else if (state.compare("PLCR") == 0) {
-//    //cout << "State = PLCR" << endl;
-//    // Allow change lane to right
-//    // so long it is not in the outermost right lane
-//    if ((current_lane < NUM_LANES-1) && !car_to_right){
-//      states.push_back("PLCR");
-//      states.push_back("LCR");
-//    }
   }
   
   return states;
@@ -187,10 +174,10 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
   bool car_to_left  = this->car_to_left;
   bool car_to_right = this->car_to_right;
   
-  if(state.compare("LCL") == 0 && !car_to_left && (current_lane > 0)) {
+  if((state.compare("LCL") == 0 || state.compare("PLCL") == 0)  && !car_to_left && (current_lane > 0)) {
     // Allow to change lane to left if there is no car on the left lane
     target_lane = current_lane - 1;
-  } else if (state.compare("LCR") == 0 && !car_to_right && (current_lane < NUM_LANES-1)) {
+  } else if ((state.compare("LCR") == 0 || state.compare("PLCR") == 0) && !car_to_right && (current_lane < NUM_LANES-1)) {
     // Allow to change lane to right if there is no car on the right lane
     target_lane = current_lane + 1;
   } else {
