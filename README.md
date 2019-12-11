@@ -140,11 +140,11 @@ To guide the path planner to make a better decision on deciding the best traject
 
 With each cost function, there is a `weight` factor that is added to the cost calculation. The weight factor allows us to tune the relative costs/penalty of the each possible trajectory. The value of the weight values are listed as above and ranked from the highest to the lowest. The cost function such as collision cost carries the heaviest weight, obvisouly for safety reason because this is the single most important objective that the car must meet.
 
-*Sensitivty to initiate the lane change lane*
+*Sensitivity to initiate the lane change lane*
 
 Then there are other factors such as how close is the ego vehicle near the `leading_car` in the ego vehicle's intended lane, which is reflected by `in_lane_buffer_cost()`. The distance to the `leading_car` is determined by `get_nearest_leading_car_for_lane()`. `efficiency_cost()` that encourage the vehicle to drive as close to the speed limit. `Buffer Cost()` that penalize getting too close to other nearby vehicles `check_nearby_cars()`. These three cost functions influences how likely the ego vehicle decides to initiate to change lane. 
 
-*Sensitivty to return to the middle lane*
+*Sensitivity to return to the middle lane*
 
 With `out_of_middle_lane_cost()` cost function, that influences the sensitivty to return back to the middle lane after the lane change.
 
