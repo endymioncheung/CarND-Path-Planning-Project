@@ -12,12 +12,12 @@ using namespace std;
 class Vehicle {
 public:
 
-  // Vehicle in Freenet Coordinates (longitudinal along the lane line)
+  // Vehicle in Frenet Coordinates (longitudinal along the lane line)
   double s;       // s position
   double s_dot;   // s velocity
   double s_ddot;  // s acceleration
 
-  // Vehicle in Freenet Coordinates (clock-wise perpendicular to the lane line)
+  // Vehicle in Frenet Coordinates (clock-wise perpendicular to the lane line)
   double d;       // d position
   double d_dot;   // d velocity
   double d_ddot;  // d acceleration
@@ -63,11 +63,14 @@ public:
   // *********************************************** //
   
   Vehicle get_nearest_leading_car_for_lane(int target_lane, map<int,vector<Vehicle>> predictions, double duration);
+  vector<string> successor_states();
+  Vehicle choose_next_state(map<int,vector<Vehicle>> &predictions, double traj_start_time, double duration);
+  
   Vehicle get_target_for_state(string state, map<int,vector<Vehicle>> &predictions,double duration);
   vector<vector<double>> generate_trajectory_path_for_target(Vehicle perturbed_target, double duration);
   
   // Check other cars nearby ego vehicle
-  void check_nearby_cars(vector<Vehicle> other_cars);
+  void check_nearby_cars(vector<Vehicle> &other_cars);
   
   // Update the vehicle state
   void realize_next_state(Vehicle &next_state);
@@ -86,8 +89,6 @@ public:
   vector<Vehicle> generate_predictions(double traj_start_time, double duration);
   
   // (Ego vehicle) trajectory generation
-  vector<string> successor_states();
-  Vehicle choose_next_state(map<int,vector<Vehicle>> &predictions, double traj_start_time, double duration);
   vector<Vehicle> generate_trajectory(string state, map<int, vector<Vehicle>> &predictions, double duration);
   
   // Calculate kinematics for selected trajectory

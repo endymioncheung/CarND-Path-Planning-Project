@@ -14,7 +14,7 @@ Vehicle::Vehicle() {}
 
 Vehicle::Vehicle(int lane, string state, double s, double s_dot, double s_ddot, double d, double d_dot, double d_ddot) {
   
-  // Initalize the vehicle class with Freenet coordinates
+  // Initalize the vehicle class with Frenet coordinates
   
   this->lane   = lane;
   this->state  = state;
@@ -150,8 +150,8 @@ vector<string> Vehicle::successor_states() {
 
 Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &predictions, double duration) {
   
-  // Return target ego vehicle state
-  // (position, velocity and acceleration) in Freenet coordinates
+  // Return target ego vehicle kinematics
+  // (position, velocity and acceleration) in Frenet coordinates
 
   //**************************************//
   //           Ego Vehice State           //
@@ -282,7 +282,7 @@ Vehicle Vehicle::get_target_for_state(string state, map<int,vector<Vehicle>> &pr
   return target;
 }
 
-void Vehicle::check_nearby_cars(vector<Vehicle> other_cars) {
+void Vehicle::check_nearby_cars(vector<Vehicle> &other_cars) {
   
   // Prepare to change lane logic to check if there is a car
   // close to left or right of the ego vehicle and
@@ -434,7 +434,7 @@ vector<vector<double>> Vehicle::generate_trajectory_path_for_target(Vehicle targ
   // that connects the current (ego) vehicle state to target vehicle state for a given duration
   // with N_SAMPLES number of trajectory points
   
-  // Current and target Freenet coordinate for JMT generation
+  // Current and target Frenet coordinate for JMT generation
   vector<double> current_s = {this->s,   this->s_dot,  this->s_ddot};
   vector<double> current_d = {this->d,   this->d_dot,  this->d_ddot};
   vector<double> target_s  = {target.s, target.s_dot, target.s_ddot};
@@ -444,7 +444,7 @@ vector<vector<double>> Vehicle::generate_trajectory_path_for_target(Vehicle targ
   this->s_traj_coeffs = calculate_JMT_coeffs(current_s, target_s, duration);
   this->d_traj_coeffs = calculate_JMT_coeffs(current_d, target_d, duration);
 
-  // Generate JMT in Freenet coordinate
+  // Generate JMT in Frenet coordinate
   vector<double> s_traj, d_traj;
   for (int i = 0; i < N_SAMPLES; i++) {
     double s_val = 0;

@@ -115,7 +115,7 @@ int main() {
 
           //****************************************************//
           //        Create coarse interpolated waypoints        //
-          //             around the the ego vehicle             //
+          //               around the ego vehicle               //
           //****************************************************//
 
           int num_waypoints       = map_waypoints_x.size(); // highway_map.csv has 181 waypoints
@@ -158,16 +158,16 @@ int main() {
           interpolated_waypoints_dx = interpolate_points(coarse_waypoints_s, coarse_waypoints_dx, WAYPOINT_DIST_INCREMENT, num_interpolation_points);
           interpolated_waypoints_dy = interpolate_points(coarse_waypoints_s, coarse_waypoints_dy, WAYPOINT_DIST_INCREMENT, num_interpolation_points);
 
-          // Interpolated waypoints Freenet s position
+          // Interpolated waypoints Frenet s position
           interpolated_waypoints_s.push_back(coarse_waypoints_s[0]);
           for (int i = 1; i < num_interpolation_points; i++) {
               interpolated_waypoints_s.push_back(coarse_waypoints_s[0] + i * WAYPOINT_DIST_INCREMENT);
           }
 
-          //****************************************//
-          //         Sub path definition and        //
-          //           ego vehicle states           //
-          //****************************************//
+          //*****************************************//
+          //  Determine the ego vehicle kinematics   //
+          //  and convert them to Frenet coordinates //
+          //*****************************************//
 
           double s_pos, s_dot, s_ddot;
           double d_pos, d_dot, d_ddot;
@@ -200,6 +200,8 @@ int main() {
             ref_x3     = previous_path_x[subpath_size-3];
             ref_y3     = previous_path_y[subpath_size-3];
             ref_angle  = atan2(ref_y1-ref_y2,ref_x1-ref_x2);
+            
+            // Converting the global map coordinate to the Frenet coordinate
             vector<double> pt_frenet = getFrenet(ref_x1, ref_y1, ref_angle, interpolated_waypoints_x, interpolated_waypoints_y, interpolated_waypoints_s);
             s_pos = pt_frenet[0];
             d_pos = pt_frenet[1];
@@ -213,7 +215,7 @@ int main() {
             double sx = -dy;
             double sy = dx;
 
-            // Calculate velocity for Freenet coordinate
+            // Calculate velocity for Frenet coordinate
             vel_x1 = (ref_x1 - ref_x2) / PATH_DT;
             vel_y1 = (ref_y1 - ref_y2) / PATH_DT;
 
@@ -221,7 +223,7 @@ int main() {
             s_dot = vel_x1 * sx + vel_y1 * sy;
             d_dot = vel_x1 * dx + vel_y1 * dy;
 
-            // Calculate acceleration for Freenet coordinate
+            // Calculate acceleration for Frenet coordinate
             vel_x2 = (ref_x2 - ref_x3) / PATH_DT;
             vel_y2 = (ref_y2 - ref_y3) / PATH_DT;
             acc_x  = (vel_x1 - vel_x2) / PATH_DT;
@@ -232,7 +234,7 @@ int main() {
             d_ddot = acc_x * dx + acc_y * dy;
           }
 
-          // Set the ego vehicle Freenet coordinates
+          // Set the ego vehicle Frenet coordinates
           // (position, velocity and acceleration)
           ego_car.s      = s_pos;
           ego_car.s_dot  = s_dot;
@@ -308,7 +310,7 @@ int main() {
           //     for the best target     //
           //*****************************//
 
-          // Converting the Freenet coordinate back to the global map coordinate
+          // Converting the Frenet coordinate back to the global map coordinate
           
           vector<double> coarse_s_traj, coarse_x_traj, coarse_y_traj,
               interpolated_s_traj,interpolated_x_traj, interpolated_y_traj;
@@ -349,6 +351,7 @@ int main() {
           coarse_x_traj.push_back(target_x1);
           coarse_y_traj.push_back(target_y1);
 
+
           double target_s2 = s_pos + 60;
           double target_d2 = best_target.d;
           vector<double> target_x2y2 = getXY(target_s2, target_d2, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
@@ -358,9 +361,10 @@ int main() {
           coarse_x_traj.push_back(target_x2);
           coarse_y_traj.push_back(target_y2);
 
+          // Create interpolated Frenet s trajectory
+          // based on the target kinematics
           double current_s      = s_pos;
           double current_s_dot  = s_dot;
-
           double target_s_dot   = best_target.s_dot;
           for (int i = 0; i < (NUM_PATH_POINTS - subpath_size); i++) {
             double diff_s_dot = fabs(target_s_dot - current_s_dot);
