@@ -138,22 +138,6 @@ double efficiency_cost(vector<double> &s_traj) {
   double final_s_dot = s_dot_traj[s_dot_traj.size() - 1];
 
   return logistic((SPEED_LIMIT - final_s_dot) / SPEED_LIMIT);
-} 
-
-double max_accel_cost(vector<double> &s_traj) {
-  
-  // Binary cost function that penalize
-  // acceleration exceeding MAX_INSTANT_ACCEL
-  
-  vector<double> s_dot_traj  = velocities_in_traj(s_traj);
-  vector<double> s_ddot_traj = velocities_in_traj(s_dot_traj);
-  
-  for (double s_ddot : s_ddot_traj) {
-    if (s_ddot > MAX_INSTANT_ACCEL) {
-      return 1;
-    }
-  }
-  return 0;
 }
 
 double out_of_middle_lane_cost(vector<double> d_traj) {
@@ -228,6 +212,23 @@ double calculate_cost(vector<vector<double>> &traj, map<int,vector<Vehicle>> &pr
 //  vector<double> s_dot_traj = velocities_in_traj(s_traj);
 //  for (double s_dot : s_dot_traj) {
 //    if (s_dot > SPEED_LIMIT) {
+//      return 1;
+//    }
+//  }
+//  return 0;
+//}
+//
+//
+//double max_accel_cost(vector<double> &s_traj) {
+//  
+//  // Binary cost function that penalize
+//  // acceleration exceeding MAX_INSTANT_ACCEL
+//  
+//  vector<double> s_dot_traj  = velocities_in_traj(s_traj);
+//  vector<double> s_ddot_traj = velocities_in_traj(s_dot_traj);
+//  
+//  for (double s_ddot : s_ddot_traj) {
+//    if (s_ddot > MAX_INSTANT_ACCEL) {
 //      return 1;
 //    }
 //  }

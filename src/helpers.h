@@ -132,47 +132,4 @@ vector<double> getXY(double s, double d, vector<double> maps_s, vector<double> m
   return {x,y};
 }
 
-// Helper function to load data for the Gaussian Naive Bayes Classifier
-// implemented in `classifier.cpp`
-// Load state from .txt file
-vector<vector<double>> Load_State(string file_name) {
-  ifstream in_state_(file_name.c_str(), ifstream::in);
-  vector<vector<double>> state_out;
-  string line;
-  
-  // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
-  while (getline(in_state_, line)) {
-    std::istringstream iss(line);
-    vector<double> x_coord;
-      
-    string token;
-    while (getline(iss,token,',')) {
-      x_coord.push_back(stod(token));
-    }
-    state_out.push_back(x_coord);
-  }
-
-  return state_out;
-}
-
-// Helper function to load data for the Gaussian Naive Bayes Classifier
-// implemented in `classifier.cpp`
-// Load labels from .txt file
-vector<string> Load_Label(string file_name) {
-  // Each observation is a tuple with 4 values: s, d, s_dot and d_dot
-  ifstream in_label_(file_name.c_str(), ifstream::in);
-  vector<string> label_out;
-  string line;
-  
-  while (getline(in_label_, line)) {
-    std::istringstream iss(line);
-    
-    string label;
-    iss >> label;
-    
-    label_out.push_back(label);
-  }
-    
-  return label_out;
-}
 #endif /* helpers_h */
