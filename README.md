@@ -6,7 +6,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 The goal of this project is to safely navigate the ego vehicle around a virtual highway with other traffic that is driving +/-10 MPH of the 50 MPH speed limit **without incidents**. To achieve this, a path planner is implemented in C++ and tested with a virtual simulator.
 
-![best time without incident](report_images/best_time.PNG)
+![lane change](report_images/lane_change.gif)
 
 ## Basic Build Instructions
 
@@ -97,6 +97,8 @@ Ideally the ego vehicle should drive close to the highway speed limit (50 MPH) w
 The car should be able to make one complete loop around the 6946m (or 4.32 miles) highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
 
 ## Overview of the Path Planner algorithm
+
+![best time without incident](report_images/best_time.png)
 
 1. Read and load the highway waypoints (for the ego vehicle)
 2. Connect to vehicle simulator via `uWebSockets` and parse the ego vehicle object and the waypoints to the `onMessage` event function. During the `onMessage` event/communication with the vehicle simulator, do the following steps.
