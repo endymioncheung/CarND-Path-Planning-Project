@@ -186,3 +186,4 @@ double calculate_cost(vector<vector<double>> &traj, map<int,vector<Vehicle>> &pr
   
   return total_cost;
 }
+#endif
